@@ -99,3 +99,11 @@ def test_bild_nur_erlaubte_dateien(app_client):
     assert client.get(f"/api/bild/{rid}").content == b"RIFF"
     assert client.get(f"/api/bild/{rid}?datei=../../etc/passwd").status_code == 400
     assert client.get("/api/bild/nicht-gueltig").status_code == 422
+
+
+def test_oberflaeche_wird_nie_veraltet_ausgeliefert(app_client):
+    client, _ = app_client
+    for pfad in ("/", "/app.js", "/style.css", "/sw.js", "/manifest.webmanifest"):
+        antwort = client.get(pfad)
+        assert antwort.status_code == 200, pfad
+        assert antwort.headers["cache-control"] == "no-cache", pfad

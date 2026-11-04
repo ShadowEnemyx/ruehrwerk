@@ -14,6 +14,15 @@ from .speicher import Speicher
 WEB_ORDNER = Path(__file__).resolve().parent.parent / "web"
 
 
+class ImmerNachfragen(StaticFiles):
+    """Liefert die Oberfläche mit "no-cache": Der Browser fragt jedes Mal nach (ETag), damit Updates sofort ankommen."""
+
+    async def get_response(self, path, scope):
+        antwort = await super().get_response(path, scope)
+        antwort.headers["Cache-Control"] = "no-cache"
+        return antwort
+
+
 def create_app(einst: Einstellungen | None = None, mealie: MealieClient | None = None) -> FastAPI:
     einst = einst or einstellungen()
     app = FastAPI(title="Rührwerk", version=__version__, docs_url="/api/docs", openapi_url="/api/openapi.json")
@@ -22,7 +31,7 @@ def create_app(einst: Einstellungen | None = None, mealie: MealieClient | None =
     app.state.speicher = Speicher(einst.data_dir)
     app.include_router(router)
     if WEB_ORDNER.is_dir():
-        app.mount("/", StaticFiles(directory=WEB_ORDNER, html=True), name="web")
+        app.mount("/", ImmerNachfragen(directory=WEB_ORDNER, html=True), name="web")
     return app
 
 
