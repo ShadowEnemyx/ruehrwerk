@@ -1,0 +1,14 @@
+# Umgebung und Caches (liegen auf der externen SSD)
+.venv/
+.cache/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Geheimnisse und lokale Daten – nie einchecken
+.env
+data/
+
+# macOS / ExFAT-Begleitdateien
+._*
+.DS_Store
