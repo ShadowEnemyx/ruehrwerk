@@ -29,3 +29,6 @@ Hinweis: Rührwerk hat noch keine eigene Anmeldung. Betreibe es nur im Heimnetz,
 - „Thermomix“ ist eine eingetragene Marke der Vorwerk International & Co. KmG. Rührwerk ist ein unabhängiges
   Projekt und steht in keiner Verbindung zu Vorwerk.
 - Rührwerk greift nicht auf Cookidoo zu. Importierte Rezepte sind nur für den privaten Gebrauch gedacht.
+
+## Lizenz
+MIT, siehe [LICENSE](LICENSE). Die Lizenz gilt für den Code von Rührwerk, nicht für Mealie oder importierte Rezepte.
