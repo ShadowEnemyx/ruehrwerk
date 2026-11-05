@@ -107,3 +107,13 @@ def test_oberflaeche_wird_nie_veraltet_ausgeliefert(app_client):
         antwort = client.get(pfad)
         assert antwort.status_code == 200, pfad
         assert antwort.headers["cache-control"] == "no-cache", pfad
+
+
+def test_wach_videos_werden_ausgeliefert(app_client):
+    """Ersatz fürs Wachhalten ohne HTTPS: beide Videodateien müssen mit Videotyp erreichbar sein."""
+    client, _ = app_client
+    for datei, typ in (("wach.mp4", "video/mp4"), ("wach.webm", "video/webm")):
+        r = client.get(f"/{datei}")
+        assert r.status_code == 200
+        assert r.headers["content-type"].startswith(typ)
+        assert len(r.content) > 100

@@ -124,19 +124,38 @@ function zutatText(z, faktor) {
 }
 
 // ---------- Wake Lock (Bildschirm bleibt an) ----------
+// Mit HTTPS gibt es die Wake-Lock-Schnittstelle. Ohne HTTPS (z. B. http://192.168.x.x im Heimnetz) spielen wir
+// stattdessen ein winziges, stummes Video ab: Solange Video läuft, schaltet das Handy den Bildschirm meist nicht aus.
 let wachSperre = null;
 let wachGewuenscht = false;
+let wachVideo = null;
+function videoErsatz(an) {
+  if (an) {
+    if (!wachVideo) {
+      const v = h('video', { muted: '', loop: '', playsinline: '', 'aria-hidden': 'true', tabindex: '-1', preload: 'auto' },
+        h('source', { src: 'wach.mp4', type: 'video/mp4' }), h('source', { src: 'wach.webm', type: 'video/webm' }));
+      v.muted = true; // muss als Eigenschaft gesetzt sein, sonst blockieren Browser das Abspielen
+      v.style.cssText = 'position:fixed;left:0;bottom:0;width:2px;height:2px;opacity:0.02;pointer-events:none';
+      document.body.append(v);
+      wachVideo = v;
+    }
+    wachVideo.play().catch(() => { /* ohne Fingertipp erlaubt der Browser es evtl. nicht – Hinweis im Kochmodus */ });
+  } else if (wachVideo) {
+    wachVideo.pause();
+  }
+}
 async function wachHalten(an) {
   wachGewuenscht = an;
+  if (!('wakeLock' in navigator)) { videoErsatz(an); return; }
   try {
-    if (an && 'wakeLock' in navigator && !wachSperre) {
+    if (an && !wachSperre) {
       wachSperre = await navigator.wakeLock.request('screen');
       wachSperre.addEventListener('release', () => { wachSperre = null; });
     } else if (!an && wachSperre) {
       await wachSperre.release();
       wachSperre = null;
     }
-  } catch { /* z. B. Akkusparmodus – der Hinweis im Kochmodus erklärt das */ }
+  } catch { if (an) videoErsatz(true); /* z. B. Akkusparmodus: dann Ersatz versuchen */ }
 }
 document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'visible' && wachGewuenscht && !wachSperre) wachHalten(true);
@@ -585,7 +604,7 @@ async function kochAnsicht(slug, index, nr) {
     zutatenDiesesSchritts.length ? h('section', { class: 'schritt-zutaten', 'aria-labelledby': 'sz-titel' },
       h('h2', { id: 'sz-titel' }, 'Zutaten für diesen Schritt'),
       h('ul', {}, zutatenDiesesSchritts.map((z) => h('li', {}, zutatText(z, faktor))))) : null,
-    !('wakeLock' in navigator) ? h('p', { class: 'klein leise' }, 'Hinweis: Dein Browser kann den Bildschirm nicht automatisch anlassen. Stelle die Bildschirmsperre ggf. länger ein.') : null,
+    !('wakeLock' in navigator) ? h('p', { class: 'klein leise' }, 'Hinweis: Ohne HTTPS hält Rührwerk den Bildschirm mit einem Ersatztrick an. Geht er trotzdem aus, stelle die Bildschirmsperre länger ein.') : null,
   );
 
   navSlot.replaceChildren(h('nav', { class: 'nav', 'aria-label': 'Schritte' },

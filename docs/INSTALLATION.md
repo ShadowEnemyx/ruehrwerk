@@ -49,8 +49,13 @@ und trage deine eigene E-Mail-Adresse ein. Betreibe die Dienste nur im Heimnetz,
 Öffne die Adresse von **Rührwerk** (Port 8080) am Handy. Oben steht „Mealie verbunden“. Füge einen Rezept-Link ein
 und tippe auf „Importieren“.
 
-**HTTPS:** Bildschirm-wach-halten, Offline-Betrieb und „Als App installieren“ funktionieren auf dem Handy nur über
-HTTPS. Zum Ausprobieren reicht `http://`.
+**Bildschirm bleibt an:** Auch ohne HTTPS (also über `http://` im Heimnetz) hält Rührwerk den Bildschirm im
+Kochmodus mit einem Ersatztrick an: Ein winziges stummes Video läuft unsichtbar mit. Das ist kein Garant, probiere es
+an deinem Handy aus. Geht der Bildschirm trotzdem aus, stelle die Bildschirmsperre länger ein.
+
+**HTTPS (optional):** Offline-Betrieb und „Als App installieren“ funktionieren nur über HTTPS, ebenso die
+eingebaute Bildschirm-Sperre des Browsers. Zuhause brauchst du das nicht zwingend. Wenn du es später möchtest,
+geht es zum Beispiel mit Tailscale; das ist noch nicht in den Installer eingebaut.
 
 ## Probleme
 - **„Docker-Selbsttest FEHLGESCHLAGEN“ / Fehler mit `ip_unprivileged_port_start`:** Dein Proxmox ist älter als `lxc-pve 6.0.5-2`.
