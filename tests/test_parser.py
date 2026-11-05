@@ -107,6 +107,14 @@ FAELLE = [
     ("Bei 200 °C Umluft 12 Min. backen.", []),
     ("Die Pfanne auf 180 Grad erhitzen.", []),
     ("Den Ofen auf 220 °C vorheizen und das Blech einschieben.", []),
+    # --- Schreibweisen aus echten Rezepten: "St." für Stufe, "100 C" ohne Gradzeichen ---
+    ("Zwiebel und Knoblauch hacken: 5 Sek/St. 5 hacken.", [E(d=5, s=5)]),
+    ("Öl zugeben und 2min/100 C/St. 1 dünsten", [E(d=120, t=100, s=1)]),
+    ("5min/100 C/ St. 2,5 kochen.", [E(d=300, t=100, s=2.5)]),
+    ("3 Min./100 C/St 1", [E(d=180, t=100, s=1)]),
+    ("10 Sek./St.5", [E(d=10, s=5)]),
+    ("Bei 180 C für 25 min im vorgeheizten Backofen überbacken", []),
+    ("Mit 2 Stück 5 Min. ruhen lassen.", []),
     # --- Texte ohne Einstellung ---
     ("30 Min. im Kühlschrank ruhen lassen.", []),
     ("Teig 1 Std. gehen lassen.", []),

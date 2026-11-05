@@ -30,7 +30,7 @@ ZEIT = (
 )
 TEMP = (
     rf"{KEINE_ZAHL_DAVOR}{ZAHL}(?:{BEREICH}{ZAHL})?\s*"
-    rf"(?:°\s*(?:C(?:elsius)?{ENDE})?|Grad(?:\s*C(?:elsius)?)?{ENDE})"
+    rf"(?:°\s*(?:C(?:elsius)?{ENDE})?|Grad(?:\s*C(?:elsius)?)?{ENDE}|C{ENDE})"
 )
 # "Varoma" als Temperaturangabe, aber nicht der Aufsatz ("Varoma-Aufsatz", "Varoma-Behälter" ...)
 VAROMA = (
@@ -39,7 +39,7 @@ VAROMA = (
 )
 SANFT = rf"(?<![{BUCH}])Sanftr(?:ü|ue)hr-?stufe{ENDE}"
 TEIG = rf"(?<![{BUCH}])Teigknet-?stufe{ENDE}"
-STUFE = rf"(?<![{BUCH}])Stufe\s*(?P<s1>{ZAHL})(?:{BEREICH_STUFE}(?P<s2>{ZAHL}))?"
+STUFE = rf"(?<![{BUCH}])(?:Stufe|St\.?{ENDE})\s*(?P<s1>{ZAHL})(?:{BEREICH_STUFE}(?P<s2>{ZAHL}))?"
 TURBO = rf"(?<![{BUCH}])Turbo(?:-?\s*(?:Stufe|Taste))?{ENDE}"
 LINKS = rf"(?<![{BUCH}])Linkslauf{ENDE}"
 
