@@ -82,3 +82,8 @@ def test_grenzen_stehen_an_einer_stelle():
     assert 37 in GRENZEN.temperaturen and 120 in GRENZEN.temperaturen and 100 in GRENZEN.temperaturen
     assert 101 not in GRENZEN.temperaturen
     assert 0.5 in GRENZEN.stufen and 10 in GRENZEN.stufen and 2.5 not in GRENZEN.stufen
+
+
+def test_zahlen_im_hinweis_mit_komma():
+    h = pruefe(parse_schritt("5 Min./100 °C/Stufe 2,5").einstellungen[0])
+    assert any("2,5" in a.text and "2.5" not in a.text for a in h)

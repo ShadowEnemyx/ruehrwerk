@@ -35,10 +35,15 @@ class Grenzen:
 GRENZEN = Grenzen()
 
 
+def _zahl(wert: float) -> str:
+    """Zahl in deutscher Schreibweise: 2.5 -> "2,5"."""
+    return f"{wert:g}".replace(".", ",")
+
+
 def _fmt_zeit(sekunden: float) -> str:
     if sekunden >= 60 and sekunden % 60 == 0:
         return f"{int(sekunden // 60)} Min."
-    return f"{sekunden:g} Sek."
+    return f"{_zahl(sekunden)} Sek."
 
 
 def pruefe(e: Einstellung, grenzen: Grenzen = GRENZEN) -> list[Hinweis]:
@@ -64,10 +69,10 @@ def pruefe(e: Einstellung, grenzen: Grenzen = GRENZEN) -> list[Hinweis]:
     # --- Werte außerhalb dessen, was das Gerät kann ---
     if e.temperatur_c is not None and e.temperatur_c not in grenzen.temperaturen:
         h.append(
-            Hinweis("TEMP_UNGUELTIG", f"{e.temperatur_c:g} °C lässt sich am Gerät nicht einstellen. Bitte prüfen.")
+            Hinweis("TEMP_UNGUELTIG", f"{_zahl(e.temperatur_c)} °C lässt sich am Gerät nicht einstellen. Bitte prüfen.")
         )
     if e.stufe is not None and e.stufe not in grenzen.stufen:
-        h.append(Hinweis("STUFE_UNGUELTIG", f"Stufe {e.stufe:g} gibt es nicht (0,5 oder 1–10). Bitte prüfen."))
+        h.append(Hinweis("STUFE_UNGUELTIG", f"Stufe {_zahl(e.stufe)} gibt es nicht (0,5 oder 1–10). Bitte prüfen."))
     if e.dauer_s is not None and e.dauer_s <= 0:
         h.append(Hinweis("ZEIT_UNGUELTIG", "Die Zeit ist 0. Bitte prüfen."))
     elif e.dauer_s is not None and e.dauer_s > grenzen.lange_zeit_ab_s:
@@ -75,9 +80,9 @@ def pruefe(e: Einstellung, grenzen: Grenzen = GRENZEN) -> list[Hinweis]:
 
     # --- Ungewöhnliche Kombinationen ---
     if heiss and e.stufe is not None and e.stufe >= grenzen.hohe_stufe_ab:
-        h.append(Hinweis("HEISS_SCHNELL", f"Hohe Stufe ({e.stufe:g}) bei heißem Inhalt ist ungewöhnlich. Bitte prüfen."))
+        h.append(Hinweis("HEISS_SCHNELL", f"Hohe Stufe ({_zahl(e.stufe)}) bei heißem Inhalt ist ungewöhnlich. Bitte prüfen."))
     if e.linkslauf and e.stufe is not None and e.stufe > grenzen.linkslauf_max_stufe:
-        h.append(Hinweis("LINKSLAUF_SCHNELL", f"Linkslauf mit Stufe {e.stufe:g} ist ungewöhnlich. Bitte prüfen."))
+        h.append(Hinweis("LINKSLAUF_SCHNELL", f"Linkslauf mit Stufe {_zahl(e.stufe)} ist ungewöhnlich. Bitte prüfen."))
     if e.art == "turbo" and (e.temperatur_c is not None or e.varoma):
         h.append(Hinweis("TURBO_MIT_TEMP", "Turbo zusammen mit einer Temperatur ist ungewöhnlich. Bitte prüfen."))
     if e.art == "teigknet" and (e.temperatur_c is not None or e.varoma):
