@@ -2,7 +2,9 @@
 
 from typing import Annotated, Literal
 
-from fastapi import APIRouter, HTTPException, Path, Query, Request, Response
+from urllib.parse import urlparse
+
+from fastapi import APIRouter, File, Form, HTTPException, Path, Query, Request, Response, UploadFile
 from pydantic import BaseModel, Field, field_validator
 
 from . import __version__
@@ -16,6 +18,15 @@ router = APIRouter(prefix="/api")
 Slug = Annotated[str, Path(pattern=r"^[A-Za-z0-9_-]{1,200}$")]
 RezeptId = Annotated[str, Path(pattern=r"^[0-9a-fA-F-]{36}$")]
 BILD_DATEIEN = {"original.webp", "min-original.webp", "tiny-original.webp"}
+
+# Foto-Import per KI: Grenzen (bewusst klein gehalten, die Fotos gehen über Mealie an den KI-Anbieter)
+MAX_BILDER = 6
+MAX_BILD_BYTES = 10 * 1024 * 1024
+MAX_TEXT_ZEICHEN = 20000
+COOKIDOO_HINWEIS = (
+    "Links zu Cookidoo werden nicht unterstützt: Rührwerk greift nicht auf Cookidoo zu. "
+    "Nutze stattdessen einen frei zugänglichen Rezept-Link, ein Foto aus deinem eigenen Kochbuch oder füge den Text selbst ein."
+)
 
 
 def _mealie(request: Request) -> MealieClient:
@@ -35,6 +46,27 @@ async def _mealie_aufruf(coro):
         raise HTTPException(status_code=code, detail=text) from exc
 
 
+def _ist_cookidoo(adresse: str) -> bool:
+    try:
+        host = (urlparse(adresse).hostname or "").lower()
+    except ValueError:
+        return False
+    return "cookidoo" in host
+
+
+def _bildtyp(kopf: bytes) -> str | None:
+    """Erkennt den Bildtyp am Dateianfang (dem Medientyp des Browsers wird nicht vertraut)."""
+    if kopf.startswith(b"\xff\xd8\xff"):
+        return "image/jpeg"
+    if kopf.startswith(b"\x89PNG\r\n\x1a\n"):
+        return "image/png"
+    if kopf[:4] == b"RIFF" and kopf[8:12] == b"WEBP":
+        return "image/webp"
+    if kopf[:6] in (b"GIF87a", b"GIF89a"):
+        return "image/gif"
+    return None
+
+
 class ImportAnfrage(BaseModel):
     url: str = Field(max_length=2000)
 
@@ -44,6 +76,8 @@ class ImportAnfrage(BaseModel):
         v = v.strip()
         if not v.lower().startswith(("http://", "https://")):
             raise ValueError("Bitte einen Link angeben, der mit http:// oder https:// beginnt.")
+        if _ist_cookidoo(v):
+            raise ValueError(COOKIDOO_HINWEIS)
         return v
 
 
@@ -75,6 +109,40 @@ async def verbindung_testen(request: Request):
 @router.post("/import", status_code=201)
 async def rezept_importieren(daten: ImportAnfrage, request: Request):
     slug = await _mealie_aufruf(_mealie(request).rezept_importieren(daten.url))
+    return {"slug": slug}
+
+
+@router.post("/import-ki", status_code=201)
+async def rezept_per_ki(
+    request: Request,
+    bilder: Annotated[list[UploadFile], File()] = [],  # noqa: B006 (FastAPI-Schreibweise)
+    text: Annotated[str, Form(max_length=MAX_TEXT_ZEICHEN)] = "",
+    url: Annotated[str, Form(max_length=2000)] = "",
+):
+    """Foto(s), Text und/oder Link an Mealies KI-Import weiterreichen. Es wird nichts bei uns gespeichert."""
+    text, url = text.strip(), url.strip()
+    if url:
+        try:
+            ImportAnfrage(url=url)  # gleiche Prüfung wie beim normalen Import (inkl. Cookidoo-Hinweis)
+        except ValueError as exc:
+            raise HTTPException(status_code=422, detail=str(exc.errors()[0]["msg"]).removeprefix("Value error, ")) from exc
+    if len(bilder) > MAX_BILDER:
+        raise HTTPException(status_code=422, detail=f"Bitte höchstens {MAX_BILDER} Fotos auf einmal.")
+    geprueft: list[tuple[str, bytes, str]] = []
+    for nr, datei in enumerate(bilder, start=1):
+        inhalt = await datei.read(MAX_BILD_BYTES + 1)
+        if len(inhalt) > MAX_BILD_BYTES:
+            raise HTTPException(status_code=413, detail=f"Foto {nr} ist größer als {MAX_BILD_BYTES // (1024 * 1024)} MB.")
+        typ = _bildtyp(inhalt[:16])
+        if typ is None:
+            raise HTTPException(
+                status_code=422,
+                detail=f"Foto {nr} hat ein nicht unterstütztes Format. Erlaubt sind JPEG, PNG, WebP und GIF.",
+            )
+        geprueft.append((f"seite-{nr}.{typ.split('/')[1].replace('jpeg', 'jpg')}", inhalt, typ))
+    if not (geprueft or text or url):
+        raise HTTPException(status_code=422, detail="Bitte mindestens ein Foto, einen Text oder einen Link angeben.")
+    slug = await _mealie_aufruf(_mealie(request).rezept_per_ki(geprueft, text, url))
     return {"slug": slug}
 
 

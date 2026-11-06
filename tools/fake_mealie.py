@@ -8,7 +8,7 @@ Start:  .venv/bin/python -m uvicorn tools.fake_mealie:app --port 9000
 
 import base64
 
-from fastapi import FastAPI, HTTPException, Response
+from fastapi import FastAPI, File, Form, HTTPException, Response, UploadFile
 
 app = FastAPI()
 
@@ -75,6 +75,16 @@ def rezept(slug: str):
 def importieren(daten: dict):
     if "kaputt" in daten.get("url", ""):
         raise HTTPException(400, {"message": "Konnte nicht gelesen werden"})
+    return "kuerbissuppe"
+
+
+@app.post("/api/recipes/create/ai", status_code=201)
+async def ki_import(
+    content: str | None = Form(None), url: str | None = Form(None), images: list[UploadFile] = File(default_factory=list)
+):
+    """Stand-in: erkennt kein echtes Rezept, antwortet nur wie Mealie. Text 'fehler' löst einen Fehler aus."""
+    if content and "fehler" in content:
+        raise HTTPException(400, {"message": "AI is not enabled for this group"})
     return "kuerbissuppe"
 
 

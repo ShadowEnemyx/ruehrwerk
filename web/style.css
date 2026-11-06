@@ -82,7 +82,7 @@ h1:focus { outline: none; }
 .knopf.gefahr { border-color: var(--fehler); color: var(--fehler); }
 .link { background: none; border: none; color: var(--akzent); font: inherit; font-weight: 600; padding: var(--a-2) 0; min-height: var(--tipp); cursor: pointer; text-decoration: underline; }
 label { display: block; font-weight: 600; margin-bottom: var(--a-1); }
-input[type="url"], input[type="search"] {
+input[type="url"], input[type="search"], textarea {
   width: 100%; min-height: var(--tipp); padding: var(--a-2) var(--a-3); font: inherit;
   color: var(--text); background: var(--flaeche); border: 2px solid var(--linie); border-radius: var(--r-3);
 }
@@ -191,3 +191,13 @@ legend { font-weight: 600; padding: 0; margin-bottom: var(--a-2); }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }
 }
+
+/* Import: Reiter Link / Foto und Fotoliste */
+.reiter-zeile { display: flex; gap: var(--a-2); margin-bottom: var(--a-3); }
+.reiter { flex: 1; min-height: var(--tipp); border: 2px solid var(--linie); border-radius: var(--r-3); background: var(--flaeche); color: var(--text); font: inherit; font-weight: 600; cursor: pointer; }
+.reiter[aria-pressed="true"] { background: var(--akzent); border-color: var(--akzent); color: var(--akzent-text); }
+textarea { width: 100%; font: inherit; padding: var(--a-3); border: 2px solid var(--linie); border-radius: var(--r-3); background: var(--flaeche); color: var(--text); margin-top: var(--a-2); }
+.foto-liste { list-style: none; padding: 0; margin: var(--a-3) 0; display: grid; gap: var(--a-2); }
+.foto-liste li { display: flex; justify-content: space-between; align-items: center; gap: var(--a-2); }
+form details { margin: var(--a-3) 0; }
+form summary { cursor: pointer; min-height: var(--tipp); display: flex; align-items: center; }

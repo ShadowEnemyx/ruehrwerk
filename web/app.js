@@ -58,7 +58,7 @@ async function api(pfad, optionen = {}) {
     try {
       const d = await antwort.json();
       if (typeof d.detail === 'string') detail = d.detail;
-      else if (Array.isArray(d.detail)) detail = d.detail.map((x) => x.msg).join(' ');
+      else if (Array.isArray(d.detail)) detail = d.detail.map((x) => String(x.msg).replace(/^Value error, /, '')).join(' ');
     } catch { /* Antwort war kein JSON */ }
     throw new Error(detail);
   }
@@ -396,6 +396,11 @@ async function startAnsicht(nr) {
       eingabe.focus();
       return;
     }
+    if (/cookidoo/i.test(new URL(url).hostname)) {
+      eingabe.setAttribute('aria-invalid', 'true');
+      importFehler.textContent = 'Links zu Cookidoo werden nicht unterstützt. Nutze einen frei zugänglichen Rezept-Link, ein Foto aus deinem eigenen Kochbuch oder füge den Text selbst ein.';
+      return;
+    }
     knopf.disabled = true;
     knopf.textContent = 'Importiere … (das kann etwas dauern)';
     try {
@@ -412,6 +417,66 @@ async function startAnsicht(nr) {
     h('div', { class: 'feld-zeile' }, eingabe, knopf),
     importFehler,
   );
+
+
+  // ---- Foto / Text per KI (Mealie liest das Rezept) ----
+  const MAX_BILDER = 6;
+  const MAX_MB = 10;
+  let gewaehlt = [];
+  const kiFehler = h('p', { id: 'ki-fehler', class: 'klein', role: 'alert', style: 'color: var(--fehler); margin: 4px 0 0' });
+  const kiListe = h('ul', { class: 'foto-liste' });
+  const kiDatei = h('input', { id: 'ki-fotos', type: 'file', accept: 'image/*', multiple: true, class: 'nur-lesen' });
+  const kiWaehlen = h('label', { for: 'ki-fotos', class: 'knopf', role: 'button', tabindex: '0' }, 'Foto aufnehmen oder auswählen');
+  const kiText = h('textarea', { id: 'ki-text', rows: '4', maxlength: '20000', placeholder: 'Zum Beispiel: Rezept hier einfügen oder eine Korrektur schreiben' });
+  const kiKnopf = h('button', { class: 'knopf haupt', type: 'submit', disabled: true }, 'Mit KI einlesen');
+  const kiAktualisieren = () => {
+    kiListe.replaceChildren(...gewaehlt.map((datei, i) => h('li', {},
+      h('span', {}, `Seite ${i + 1}: ${datei.name || 'Foto'} (${(datei.size / 1048576).toFixed(1).replace('.', ',')} MB)`),
+      h('button', { class: 'knopf', type: 'button', 'aria-label': `Seite ${i + 1} entfernen`, onclick: () => { gewaehlt.splice(i, 1); kiAktualisieren(); } }, 'Entfernen'))));
+    kiKnopf.disabled = !(gewaehlt.length || kiText.value.trim());
+  };
+  kiDatei.addEventListener('change', () => {
+    kiFehler.textContent = '';
+    for (const f of kiDatei.files) {
+      if (gewaehlt.length >= MAX_BILDER) { kiFehler.textContent = `Höchstens ${MAX_BILDER} Fotos auf einmal.`; break; }
+      if (f.size > MAX_MB * 1048576) { kiFehler.textContent = `„${f.name}“ ist größer als ${MAX_MB} MB.`; continue; }
+      gewaehlt.push(f);
+    }
+    kiDatei.value = ''; // damit man dasselbe Foto oder weitere Seiten erneut wählen kann
+    kiAktualisieren();
+  });
+  kiWaehlen.addEventListener('keydown', (ev) => { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); kiDatei.click(); } });
+  kiText.addEventListener('input', kiAktualisieren);
+
+  const kiFormular = h('form', { novalidate: true, hidden: true, onsubmit: async (ev) => {
+    ev.preventDefault();
+    kiFehler.textContent = '';
+    const daten = new FormData();
+    gewaehlt.forEach((f) => daten.append('bilder', f, f.name || 'foto.jpg'));
+    if (kiText.value.trim()) daten.append('text', kiText.value.trim());
+    kiKnopf.disabled = true;
+    kiKnopf.textContent = 'KI liest das Rezept … (bis zu 2 Minuten)';
+    try {
+      const { slug } = await api('/api/import-ki', { method: 'POST', body: daten });
+      location.hash = `#/rezept/${encodeURIComponent(slug)}`;
+    } catch (fehler) {
+      kiFehler.textContent = `Einlesen nicht möglich: ${fehler.message.replace(/[.!?]?$/, '.')} Ist in Mealie unter Gruppeneinstellungen ein KI-Anbieter als Standard-Anbieter eingerichtet?`;
+    } finally {
+      kiKnopf.textContent = 'Mit KI einlesen';
+      kiAktualisieren();
+    }
+  } },
+    h('p', { class: 'klein leise' }, 'Fotografiere ein Rezept (mehrere Seiten möglich). Die Fotos gehen über Mealie an deinen KI-Anbieter. Bitte nur eigene Rezepte für den privaten Gebrauch. Die KI kann sich irren: Prüfe Mengen und Einstellungen.'),
+    kiWaehlen, kiDatei, kiListe,
+    h('details', {}, h('summary', {}, 'Text oder Notiz ergänzen (optional)'), h('label', { for: 'ki-text', class: 'nur-lesen' }, 'Text oder Notiz'), kiText),
+    kiKnopf, kiFehler,
+  );
+
+  const reiter = (text, zeigeKi) => h('button', { type: 'button', class: 'reiter', 'aria-pressed': String(zeigeKi === false), onclick: (ev) => {
+    formular.hidden = zeigeKi; kiFormular.hidden = !zeigeKi;
+    ev.currentTarget.parentElement.querySelectorAll('.reiter').forEach((b) => b.setAttribute('aria-pressed', String(b === ev.currentTarget)));
+  } }, text);
+  const reiterZeile = h('div', { class: 'reiter-zeile', role: 'group', 'aria-label': 'Art des Imports' }, reiter('Link', false), reiter('Foto / Text', true));
 
   const liste = h('ul', { class: 'karte-liste' });
   const listenStatus = h('div', {});
@@ -451,7 +516,7 @@ async function startAnsicht(nr) {
     h('p', { class: 'leise' }, 'Deine Rezepte aus Mealie – Schritt für Schritt zum Nachkochen. Kompatibel mit Thermomix®.'),
     h('section', { 'aria-labelledby': 'import-titel' },
       h('h2', { id: 'import-titel' }, 'Neues Rezept'),
-      formular),
+      reiterZeile, formular, kiFormular),
     h('section', { 'aria-labelledby': 'rezepte-titel' },
       h('h2', { id: 'rezepte-titel' }, 'Meine Rezepte'),
       h('label', { for: 'suche', class: 'nur-lesen' }, 'Rezepte durchsuchen'),

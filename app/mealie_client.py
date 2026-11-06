@@ -4,6 +4,7 @@ Genutzte Endpunkte (im Mealie-Quellcode v3.30.0 geprüft):
   GET  /api/app/about              Version, ohne Anmeldung
   GET  /api/users/self             prüft, ob der Token gültig ist
   POST /api/recipes/create/url     Rezept per Link importieren, Antwort = Slug (Text)
+  POST /api/recipes/create/ai      Rezept per KI aus Fotos/Text/Link (Formular: images, content, url), Antwort = Slug
   GET  /api/recipes                Rezeptliste (Parameter: search, page, perPage)
   GET  /api/recipes/{slug}         ein Rezept komplett
   GET  /api/media/recipes/{id}/images/{datei}   Rezeptbild
@@ -11,6 +12,17 @@ Anmeldung: Header "Authorization: Bearer <API-Token>".
 """
 
 import httpx
+
+
+def _mealie_meldung(antwort: httpx.Response) -> str:
+    """Holt, falls vorhanden, den Fehlertext aus der Mealie-Antwort (Form: {"detail": {"message": ...}})."""
+    try:
+        detail = antwort.json().get("detail")
+    except (ValueError, AttributeError):
+        return ""
+    if isinstance(detail, dict):
+        detail = detail.get("message")
+    return detail.strip()[:300] if isinstance(detail, str) else ""
 
 
 class MealieFehler(Exception):
@@ -29,7 +41,7 @@ class MealieClient:
             base_url=self._basis, headers=headers, timeout=httpx.Timeout(60.0, connect=5.0), transport=self._transport
         )
 
-    async def _anfrage(self, methode: str, pfad: str, **kwargs) -> httpx.Response:
+    async def _anfrage(self, methode: str, pfad: str, *, fehlertext_zeigen: bool = False, **kwargs) -> httpx.Response:
         try:
             async with self._client() as c:
                 antwort = await c.request(methode, pfad, **kwargs)
@@ -44,6 +56,10 @@ class MealieClient:
         if antwort.status_code == 404:
             raise MealieFehler("Nicht gefunden (404).")
         if antwort.status_code >= 400:
+            if fehlertext_zeigen:
+                meldung = _mealie_meldung(antwort)
+                if meldung:
+                    raise MealieFehler(f"Mealie meldet einen Fehler ({antwort.status_code}): {meldung}")
             raise MealieFehler(f"Mealie meldet einen Fehler ({antwort.status_code}).")
         return antwort
 
@@ -58,6 +74,24 @@ class MealieClient:
     async def rezept_importieren(self, url: str) -> str:
         """Lässt Mealie ein Rezept von einem Link importieren. Gibt den Slug des neuen Rezepts zurück."""
         antwort = await self._anfrage("POST", "/api/recipes/create/url", json={"url": url, "includeTags": False})
+        slug = antwort.json()
+        if not isinstance(slug, str) or not slug:
+            raise MealieFehler("Mealie hat keinen Rezeptnamen zurückgegeben.")
+        return slug
+
+    async def rezept_per_ki(
+        self, bilder: list[tuple[str, bytes, str]], text: str = "", url: str = ""
+    ) -> str:
+        """Lässt Mealie per KI ein Rezept aus Fotos (Dateiname, Inhalt, Medientyp), Text und/oder Link erstellen.
+
+        Die KI braucht oft deutlich länger als ein normaler Import, daher ein großzügiges Zeitlimit.
+        """
+        felder = {k: v for k, v in (("content", text), ("url", url)) if v}
+        dateien = [("images", (name, inhalt, typ)) for name, inhalt, typ in bilder]
+        antwort = await self._anfrage(
+            "POST", "/api/recipes/create/ai", data=felder, files=dateien or None,
+            timeout=httpx.Timeout(240.0, connect=5.0), fehlertext_zeigen=True,
+        )
         slug = antwort.json()
         if not isinstance(slug, str) or not slug:
             raise MealieFehler("Mealie hat keinen Rezeptnamen zurückgegeben.")

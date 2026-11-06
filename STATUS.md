@@ -1,6 +1,6 @@
 # Status Rührwerk
 
-Stand: 05.11.2026. Letzter Commit auf GitHub: `fec5fe9`. Repository: https://github.com/ShadowEnemyx/ruehrwerk
+Stand: 06.11.2026. Letzter Commit auf GitHub: `fec5fe9`. Repository: https://github.com/ShadowEnemyx/ruehrwerk
 
 ## Zusammenfassung
 M1 ist umgesetzt und auf dem echten System in Betrieb: Installation per Einzeiler, Import über Mealie, Parser mit Plausibilitätsprüfung und Kochmodus laufen auf dem Proxmox-Server und wurden am Handy getestet. M2 bis M4 sind nicht abgeschlossen (M4 teilweise: Installer und Anleitung existieren).
@@ -12,6 +12,14 @@ M1 ist umgesetzt und auf dem echten System in Betrieb: Installation per Einzeile
 - `lxc-pve` ist 6.0.0-2 (älter als 6.0.5-2). Der Installer hat den Docker-Selbsttest dafür vorgesehen; Proxmox-Update steht aus.
 - Update-Befehl für den Container (Quellcode neu laden, nur Rührwerk neu bauen):
   `pct exec 112 -- bash -c 'cd /opt/ruehrwerk && curl -fsSL https://github.com/ShadowEnemyx/ruehrwerk/archive/refs/heads/main.tar.gz | tar -xz --strip-components=1 -C quelle && docker compose up -d --build ruehrwerk'`
+
+## M3: Foto-/Text-Import per KI (Stand 06.11.2026, lokal umgesetzt, noch nicht auf dem Server)
+- Rührwerk reicht Fotos (JPEG/PNG/WebP/GIF, höchstens 6 je 10 MB), optionalen Text und/oder Link an Mealies `POST /api/recipes/create/ai` weiter (im Quellcode v3.30.0 gelesen). Es wird nichts gespeichert; die Fotos gehen über Mealie an den KI-Anbieter.
+- Neue Route `/api/import-ki`, Oberfläche mit Reiter "Link" / "Foto / Text", Fehlertexte von Mealie werden angezeigt.
+- Links zu Cookidoo werden mit Hinweis abgelehnt (Projektregel: kein Cookidoo-Zugriff).
+- Neue Abhängigkeit: `python-multipart`.
+- Geprüft: automatische Tests (Erfolg, Mealie-Fehler, falsches Format, zu viele/zu große Fotos, Cookidoo, leere Anfrage) und Oberfläche im Browser gegen ein nachgestelltes Mealie (`tools/fake_mealie.py`).
+- **Nicht geprüft:** echter Import mit echtem Foto und echter KI (Qualität, Dauer, HEIC vom iPhone, Zeitlimit 240 s), Verhalten bei großen Fotos über das Heimnetz.
 
 ## Geprüft (datiert)
 - 05.11.2026: 196 automatische Tests grün (Parser, Plausibilität, Mealie-Client, API, Installer inkl. Trockenlauf mit nachgestellten Proxmox-Befehlen).
@@ -38,7 +46,7 @@ M1 ist umgesetzt und auf dem echten System in Betrieb: Installation per Einzeile
 - HTTPS: kein Reverse-Proxy. Tailscale nur als spätere Option (noch nicht im Installer); WireGuard der Fritzbox löst HTTPS nicht. Kochen findet meist zuhause statt.
 
 ## Offene Punkte
-1. Handy-Test Bildschirm-Wachhalten (iPhone und Android getrennt).
+1. Wachhalten iPhone: Status-Text "Bildschirm bleibt an (Ersatztrick läuft)" wurde gemeldet; ob der Bildschirm nach Ablauf der Sperrzeit wirklich anbleibt, ist nicht bestätigt. Android offen.
 2. Hinweis "Keine Zubereitungsschritte gefunden" statt des Mealie-Platzhalters.
 3. Plausibilitätsgrenzen am Gerät bestätigen (u. a. Stufe 2,5).
 4. Proxmox aktualisieren (`apt update && apt dist-upgrade`), danach `apt-mark unhold containerd.io` im Container falls festgesetzt; vorher Sicherung/Snapshot.
@@ -46,7 +54,7 @@ M1 ist umgesetzt und auf dem echten System in Betrieb: Installation per Einzeile
 
 ## Nächste Schritte
 - M2: Teilen-Funktion. iPhone per Apple-Kurzbefehl (braucht kein HTTPS), Android per Web Share Target (braucht HTTPS, z. B. über Tailscale).
-- M3: Foto-Import über OpenAI-kompatible API mit Schlüssel-Assistent. Prüfen, ob Mealies eigene "Mit KI importieren"-Funktion (Fotos) genutzt werden kann, statt einen eigenen Weg zu bauen.
+- M3: Foto-Import ist über Mealie umgesetzt (kein eigener Schlüssel-Assistent nötig); echter Test mit Foto steht aus.
 - M4: Installer um optionales Tailscale ergänzen, Anleitung weiter verfeinern.
 - Mehr echte Rezepte importieren, falsch gelesene Sätze als Tests aufnehmen.
 - Optional: `PROJECT_CONTEXT.md` für dauerhafte Technik und Schutzregeln anlegen (existiert noch nicht).

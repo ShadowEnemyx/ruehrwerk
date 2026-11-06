@@ -117,3 +117,74 @@ def test_wach_videos_werden_ausgeliefert(app_client):
         assert r.status_code == 200
         assert r.headers["content-type"].startswith(typ)
         assert len(r.content) > 100
+
+
+# --- Foto-/Text-Import per KI -------------------------------------------------
+JPEG = b"\xff\xd8\xff\xe0" + b"0" * 64
+PNG = b"\x89PNG\r\n\x1a\n" + b"0" * 64
+
+
+def test_ki_import_reicht_fotos_und_text_an_mealie(app_client):
+    client, mock = app_client
+    route = mock.post(f"{BASIS}/api/recipes/create/ai").mock(return_value=httpx.Response(201, json="mein-rezept"))
+    antwort = client.post(
+        "/api/import-ki",
+        files=[("bilder", ("a.jpg", JPEG, "image/jpeg")), ("bilder", ("b.png", PNG, "image/png"))],
+        data={"text": "  Notiz: Salz weglassen  "},
+    )
+    assert antwort.status_code == 201 and antwort.json() == {"slug": "mein-rezept"}
+    gesendet = route.calls.last.request
+    assert gesendet.headers["authorization"] == "Bearer tok"
+    assert gesendet.content.count(b'name="images"') == 2
+    assert b"Notiz: Salz weglassen" in gesendet.content
+
+
+def test_ki_import_nur_text(app_client):
+    client, mock = app_client
+    mock.post(f"{BASIS}/api/recipes/create/ai").mock(return_value=httpx.Response(201, json="text-rezept"))
+    assert client.post("/api/import-ki", data={"text": "200 g Mehl\nVerrühren"}).json() == {"slug": "text-rezept"}
+
+
+def test_ki_import_zeigt_mealie_fehlertext(app_client):
+    client, mock = app_client
+    mock.post(f"{BASIS}/api/recipes/create/ai").mock(
+        return_value=httpx.Response(400, json={"detail": {"message": "AI is not enabled"}})
+    )
+    antwort = client.post("/api/import-ki", data={"text": "etwas"})
+    assert antwort.status_code == 502 and "AI is not enabled" in antwort.json()["detail"]
+
+
+def test_ki_import_ohne_eingabe(app_client):
+    client, _ = app_client
+    assert client.post("/api/import-ki").status_code == 422
+
+
+def test_ki_import_falsches_format(app_client):
+    client, _ = app_client
+    antwort = client.post("/api/import-ki", files=[("bilder", ("x.jpg", b"<html>kein bild</html>", "image/jpeg"))])
+    assert antwort.status_code == 422 and "Format" in antwort.json()["detail"]
+
+
+def test_ki_import_zu_viele_fotos(app_client):
+    client, _ = app_client
+    antwort = client.post("/api/import-ki", files=[("bilder", (f"{i}.jpg", JPEG, "image/jpeg")) for i in range(7)])
+    assert antwort.status_code == 422 and "höchstens 6" in antwort.json()["detail"]
+
+
+def test_ki_import_zu_gross(app_client):
+    client, _ = app_client
+    gross = b"\xff\xd8\xff" + b"0" * (10 * 1024 * 1024 + 1)
+    antwort = client.post("/api/import-ki", files=[("bilder", ("gross.jpg", gross, "image/jpeg"))])
+    assert antwort.status_code == 413
+
+
+@pytest.mark.parametrize("pfad,daten", [("/api/import", None), ("/api/import-ki", {"url": "x"})])
+def test_cookidoo_link_wird_abgelehnt(app_client, pfad, daten):
+    client, mock = app_client
+    ziel = "https://cookidoo.de/recipes/recipe/de-DE/r123"
+    if pfad == "/api/import":
+        antwort = client.post(pfad, json={"url": ziel})
+    else:
+        antwort = client.post(pfad, data={"url": ziel})
+    assert antwort.status_code == 422
+    assert "Cookidoo" in str(antwort.json()) and not mock.calls.call_count
