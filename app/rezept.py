@@ -41,11 +41,21 @@ def _portionen(rezept: dict) -> float | None:
     return None
 
 
-def aufbereiten(rezept: dict, bestaetigungen: dict[tuple[str, int], dict] | None = None) -> dict:
+KI_HINWEIS = {
+    "code": "KI_GELESEN",
+    "text": "Von der KI aus einem Foto gelesen. Bitte Zeit, Temperatur und Stufe mit dem Foto vergleichen.",
+}
+
+
+def aufbereiten(
+    rezept: dict, bestaetigungen: dict[tuple[str, int], dict] | None = None, ki_gelesen: bool = False
+) -> dict:
     """Bereitet ein Mealie-Rezept auf.
 
     bestaetigungen: {(schritt_id, nr): {"quelle": str, "werte": dict}} aus der Datenbank.
     Eine Bestätigung gilt nur, solange der Originaltext der Einstellung unverändert ist.
+    ki_gelesen: Das Rezept wurde per KI aus einem Foto gelesen. Dann kann auch ein plausibler Wert falsch gelesen sein
+    (z. B. 6 statt 8 Min.): Jede Einstellung muss einmal bestätigt werden, nichts wird still übernommen.
     """
     bestaetigungen = bestaetigungen or {}
     schritte = []
@@ -57,6 +67,8 @@ def aufbereiten(rezept: dict, bestaetigungen: dict[tuple[str, int], dict] | None
         einstellungen = []
         for nr, e in enumerate(ergebnis.einstellungen):
             hinweise = [{"code": h.code, "text": h.text} for h in pruefe(e)]
+            if ki_gelesen:
+                hinweise.append(dict(KI_HINWEIS))
             roh = asdict(e)
             gespeichert = bestaetigungen.get((schritt_id, nr))
             bestaetigt = gespeichert if gespeichert and gespeichert["quelle"] == e.text else None
@@ -89,4 +101,5 @@ def aufbereiten(rezept: dict, bestaetigungen: dict[tuple[str, int], dict] | None
         "zutaten": [_zutat(z) for z in rezept.get("recipeIngredient") or []],
         "schritte": schritte,
         "offen": offen,
+        "ki_gelesen": ki_gelesen,
     }

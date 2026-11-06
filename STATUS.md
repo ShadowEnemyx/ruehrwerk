@@ -20,6 +20,7 @@ M1 ist umgesetzt und auf dem echten System in Betrieb: Installation per Einzeile
 - Neue Abhängigkeit: `python-multipart`.
 - Geprüft: automatische Tests (Erfolg, Mealie-Fehler, falsches Format, zu viele/zu große Fotos, Cookidoo, leere Anfrage) und Oberfläche im Browser gegen ein nachgestelltes Mealie (`tools/fake_mealie.py`).
 - 06.11.2026: Echter Import mit einem Foto und echter KI funktioniert (Aussage des Projektinhabers). Offen: Qualität über mehrere Rezepte, mehrseitige Fotos, HEIC, Zeitlimit 240 s.
+- Erfahrung 06.11.2026: Die KI hat bei Handschrift "6 min" als "8 min" gelesen (alles andere richtig). Die Plausibilitätsprüfung kann das nicht erkennen. Gegenmaßnahme: per Foto importierte Rezepte werden in Rührwerk als "von der KI gelesen" gemerkt (SQLite-Tabelle `ki_rezept`); jede Einstellung braucht dort einmal "Passt so" oder "Ändern". "Ändern" gibt es jetzt im Kochmodus auch bei unauffälligen Werten. Nur-Text-Importe werden nicht markiert. Einfache Timer-Zeiten aus dem Text (ohne Einstellung) sind nicht betroffen/markiert.
 - Rezeptbild oben wurde beschnitten (cover); jetzt vollständig mit `contain`.
 
 ## Geprüft (datiert)

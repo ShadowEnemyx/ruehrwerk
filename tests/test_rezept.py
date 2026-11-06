@@ -97,3 +97,24 @@ def test_speicher_roundtrip(tmp_path):
     assert sp.laden("b") == {}
     sp.zuruecknehmen("a", "s1", 0)
     assert sp.laden("a") == {}
+
+
+# --- Rezepte, die per KI aus einem Foto gelesen wurden ---
+def test_ki_rezept_markiert_auch_plausible_werte():
+    normal = aufbereiten(MEALIE_REZEPT)
+    ki = aufbereiten(MEALIE_REZEPT, ki_gelesen=True)
+    assert normal["ki_gelesen"] is False and ki["ki_gelesen"] is True
+    e = ki["schritte"][0]["einstellungen"][0]
+    assert e["status"] == "pruefen" and any(h["code"] == "KI_GELESEN" for h in e["hinweise"])
+    gesamt = sum(len(s["einstellungen"]) for s in ki["schritte"])
+    assert ki["offen"] == gesamt  # jede Einstellung braucht einmal "Passt so"
+
+
+def test_ki_rezept_bestaetigung_gilt():
+    ki = aufbereiten(
+        MEALIE_REZEPT,
+        {("s1", 0): {"quelle": "5 Sek./Stufe 5", "werte": {"dauer_s": 6}}},
+        ki_gelesen=True,
+    )
+    e = ki["schritte"][0]["einstellungen"][0]
+    assert e["status"] == "bestaetigt" and e["dauer_s"] == 6

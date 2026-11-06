@@ -201,3 +201,5 @@ textarea { width: 100%; font: inherit; padding: var(--a-3); border: 2px solid va
 .foto-liste li { display: flex; justify-content: space-between; align-items: center; gap: var(--a-2); }
 form details { margin: var(--a-3) 0; }
 form summary { cursor: pointer; min-height: var(--tipp); display: flex; align-items: center; }
+
+.knopf.leise-knopf { background: transparent; color: var(--text-leise); }

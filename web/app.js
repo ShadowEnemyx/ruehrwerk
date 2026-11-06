@@ -592,6 +592,7 @@ async function rezeptAnsicht(slug, nr, neuGeladen = false) {
     h('h1', { tabindex: '-1', id: 'rezept-titel' }, r.name),
     r.beschreibung ? h('p', { class: 'leise' }, r.beschreibung) : null,
     h('a', { class: 'knopf haupt gross', href: `#/kochen/${encodeURIComponent(slug)}/0`, 'aria-disabled': r.schritte.length ? null : 'true' }, 'Kochen starten'),
+    r.ki_gelesen ? h('p', { class: 'meldung warnung', role: 'note' }, 'Dieses Rezept hat die KI aus einem Foto gelesen. Sie kann Zahlen verwechseln (zum Beispiel 6 und 8). Vergleiche Zeiten, Temperaturen und Stufen mit dem Foto oben und bestätige sie.') : null,
     r.offen ? h('p', { class: 'klein leise' }, `${r.offen} ungeprüfte ${r.offen === 1 ? 'Angabe ist' : 'Angaben sind'} im Kochmodus markiert.`) : null,
     pruefBereich,
     h('h2', {}, 'Zutaten'),
@@ -655,7 +656,7 @@ async function kochAnsicht(slug, index, nr) {
       h('div', { class: 'knopf-zeile' },
         e.dauer_s != null && !pruefen ? h('button', { class: 'knopf haupt', type: 'button', onclick: () => timerStarten(`Schritt ${index + 1} · ${dauerText(e.dauer_s)}`, e.dauer_s) }, `Timer ${dauerText(e.dauer_s)}`) : null,
         pruefen ? h('button', { class: 'knopf haupt', type: 'button', onclick: async (ev) => { ev.currentTarget.disabled = true; try { await direktBestaetigen(slug, s, e); await neuLaden(); } catch (f) { ev.currentTarget.disabled = false; alert(f.message); } } }, 'Passt so') : null,
-        pruefen ? h('button', { class: 'knopf', type: 'button', onclick: () => pruefDialog(slug, s, e, neuLaden) }, 'Ändern') : null,
+        h('button', { class: pruefen ? 'knopf' : 'knopf leise-knopf', type: 'button', onclick: () => pruefDialog(slug, s, e, neuLaden) }, 'Ändern'),
       ));
   });
 

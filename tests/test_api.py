@@ -188,3 +188,25 @@ def test_cookidoo_link_wird_abgelehnt(app_client, pfad, daten):
         antwort = client.post(pfad, data={"url": ziel})
     assert antwort.status_code == 422
     assert "Cookidoo" in str(antwort.json()) and not mock.calls.call_count
+
+
+def test_foto_import_markiert_rezept_als_ki_gelesen(app_client):
+    client, mock = app_client
+    mock.post(f"{BASIS}/api/recipes/create/ai").mock(return_value=httpx.Response(201, json="testsuppe"))
+    assert client.get("/api/rezepte/testsuppe").json()["ki_gelesen"] is False
+    client.post("/api/import-ki", files=[("bilder", ("a.jpg", JPEG, "image/jpeg"))])
+    r = client.get("/api/rezepte/testsuppe").json()
+    assert r["ki_gelesen"] is True and r["offen"] > 1
+    # nach "Passt so" ist die Einstellung bestätigt
+    url = "/api/rezepte/testsuppe/schritte/s1/einstellungen/0"
+    antwort = client.put(url, json={"werte": {"dauer_s": 6, "stufe": 5, "art": "stufe"}})
+    assert antwort.status_code == 200
+    e = client.get("/api/rezepte/testsuppe").json()["schritte"][0]["einstellungen"][0]
+    assert e["status"] == "bestaetigt" and e["dauer_s"] == 6
+
+
+def test_nur_text_import_wird_nicht_markiert(app_client):
+    client, mock = app_client
+    mock.post(f"{BASIS}/api/recipes/create/ai").mock(return_value=httpx.Response(201, json="testsuppe"))
+    client.post("/api/import-ki", data={"text": "200 g Mehl verrühren"})
+    assert client.get("/api/rezepte/testsuppe").json()["ki_gelesen"] is False

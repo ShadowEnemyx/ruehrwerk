@@ -143,6 +143,8 @@ async def rezept_per_ki(
     if not (geprueft or text or url):
         raise HTTPException(status_code=422, detail="Bitte mindestens ein Foto, einen Text oder einen Link angeben.")
     slug = await _mealie_aufruf(_mealie(request).rezept_per_ki(geprueft, text, url))
+    if geprueft:  # nur bei Fotos kann etwas falsch abgelesen sein; eigener Text wird so übernommen
+        _speicher(request).ki_markieren(slug)
     return {"slug": slug}
 
 
@@ -163,7 +165,8 @@ async def rezepte(request: Request, suche: str = Query("", max_length=100), seit
 @router.get("/rezepte/{slug}")
 async def rezept(slug: Slug, request: Request):
     roh = await _mealie_aufruf(_mealie(request).rezept_laden(slug))
-    return aufbereiten(roh, _speicher(request).laden(slug))
+    speicher = _speicher(request)
+    return aufbereiten(roh, speicher.laden(slug), speicher.ist_ki(slug))
 
 
 @router.put("/rezepte/{slug}/schritte/{schritt_id}/einstellungen/{nr}")
