@@ -13,13 +13,14 @@ M1 ist umgesetzt und auf dem echten System in Betrieb: Installation per Einzeile
 - Update-Befehl für den Container (Quellcode neu laden, nur Rührwerk neu bauen):
   `pct exec 112 -- bash -c 'cd /opt/ruehrwerk && curl -fsSL https://github.com/ShadowEnemyx/ruehrwerk/archive/refs/heads/main.tar.gz | tar -xz --strip-components=1 -C quelle && docker compose up -d --build ruehrwerk'`
 
-## M3: Foto-/Text-Import per KI (Stand 06.11.2026, lokal umgesetzt, noch nicht auf dem Server)
+## M3: Foto-/Text-Import per KI (Stand 06.11.2026, auf dem Server in Betrieb)
 - Rührwerk reicht Fotos (JPEG/PNG/WebP/GIF, höchstens 6 je 10 MB), optionalen Text und/oder Link an Mealies `POST /api/recipes/create/ai` weiter (im Quellcode v3.30.0 gelesen). Es wird nichts gespeichert; die Fotos gehen über Mealie an den KI-Anbieter.
 - Neue Route `/api/import-ki`, Oberfläche mit Reiter "Link" / "Foto / Text", Fehlertexte von Mealie werden angezeigt.
 - Links zu Cookidoo werden mit Hinweis abgelehnt (Projektregel: kein Cookidoo-Zugriff).
 - Neue Abhängigkeit: `python-multipart`.
 - Geprüft: automatische Tests (Erfolg, Mealie-Fehler, falsches Format, zu viele/zu große Fotos, Cookidoo, leere Anfrage) und Oberfläche im Browser gegen ein nachgestelltes Mealie (`tools/fake_mealie.py`).
-- **Nicht geprüft:** echter Import mit echtem Foto und echter KI (Qualität, Dauer, HEIC vom iPhone, Zeitlimit 240 s), Verhalten bei großen Fotos über das Heimnetz.
+- 06.11.2026: Echter Import mit einem Foto und echter KI funktioniert (Aussage des Projektinhabers). Offen: Qualität über mehrere Rezepte, mehrseitige Fotos, HEIC, Zeitlimit 240 s.
+- Rezeptbild oben wurde beschnitten (cover); jetzt vollständig mit `contain`.
 
 ## Geprüft (datiert)
 - 05.11.2026: 196 automatische Tests grün (Parser, Plausibilität, Mealie-Client, API, Installer inkl. Trockenlauf mit nachgestellten Proxmox-Befehlen).
@@ -28,7 +29,7 @@ M1 ist umgesetzt und auf dem echten System in Betrieb: Installation per Einzeile
 - 05.11.2026: Parser-Erkennung von `5 Sek/St. 5`, `2min/100 C/St. 1`, `5min/100 C/ St. 2,5` im Safari des Projektinhabers gegen den laufenden Server geprüft; Prüfhinweis "Stufe 2,5 gibt es nicht" erscheint, Dezimalkomma im Hinweis am Handy bestätigt.
 
 ## Nicht geprüft / Einschränkungen
-- Ersatz fürs Wachhalten ohne HTTPS (stummes Video, `web/wach.mp4`/`wach.webm`): eingebaut und ausgeliefert, aber **ob der Bildschirm am iPhone bzw. Android tatsächlich anbleibt, ist offen**.
+- Ersatz fürs Wachhalten ohne HTTPS (stummes Video, `web/wach.mp4`/`wach.webm`): am iPhone bestätigt (Aussage des Projektinhabers, 06.11.2026); **Android ungetestet**.
 - Docker-Ausweichweg (containerd festsetzen) wurde auf dem echten System nicht bewusst ausgelöst/ausgewertet; Version und Zustand im Container nicht dokumentiert.
 - Dockerfile auf dem Entwicklungsrechner nicht gebaut (Docker Desktop dort nicht nutzbar); gebaut wurde es nur im Container 112.
 - Plausibilitätsgrenzen (`GRENZEN` in `app/parser/plausi.py`) sind Annahmen: Temperaturen 37 °C und 40–120 °C in 5er-Schritten, Stufen 0,5 und 1–10. Nicht am echten Gerät bestätigt (Stufe 2,5 wird daher als "prüfen" markiert).
@@ -46,7 +47,7 @@ M1 ist umgesetzt und auf dem echten System in Betrieb: Installation per Einzeile
 - HTTPS: kein Reverse-Proxy. Tailscale nur als spätere Option (noch nicht im Installer); WireGuard der Fritzbox löst HTTPS nicht. Kochen findet meist zuhause statt.
 
 ## Offene Punkte
-1. Wachhalten iPhone: Status-Text "Bildschirm bleibt an (Ersatztrick läuft)" wurde gemeldet; ob der Bildschirm nach Ablauf der Sperrzeit wirklich anbleibt, ist nicht bestätigt. Android offen.
+1. Wachhalten: am iPhone funktioniert der Ersatztrick (Aussage des Projektinhabers, 06.11.2026). Android noch nicht getestet.
 2. Hinweis "Keine Zubereitungsschritte gefunden" statt des Mealie-Platzhalters.
 3. Plausibilitätsgrenzen am Gerät bestätigen (u. a. Stufe 2,5).
 4. Proxmox aktualisieren (`apt update && apt dist-upgrade`), danach `apt-mark unhold containerd.io` im Container falls festgesetzt; vorher Sicherung/Snapshot.

@@ -108,7 +108,7 @@ input[aria-invalid="true"] { border-color: var(--fehler); }
 .rezept-karte span { font-weight: 600; overflow-wrap: anywhere; }
 
 /* Rezeptansicht */
-.rezept-bild { width: 100%; max-height: 16rem; object-fit: cover; border-radius: var(--r-4); }
+.rezept-bild { width: 100%; max-height: 28rem; object-fit: contain; background: var(--akzent-weich); border-radius: var(--r-4); } /* contain: Foto wird nie beschnitten */
 .portionen { display: flex; align-items: center; gap: var(--a-3); flex-wrap: wrap; margin: var(--a-3) 0; }
 .portionen output { min-width: 3ch; text-align: center; font-weight: 700; font-size: var(--t-l); }
 .zutaten li { padding: var(--a-2) 0; border-bottom: 1px solid var(--linie); overflow-wrap: anywhere; }
