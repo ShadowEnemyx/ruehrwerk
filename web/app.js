@@ -129,17 +129,27 @@ function zutatText(z, faktor) {
 let wachSperre = null;
 let wachGewuenscht = false;
 let wachVideo = null;
+// Safari am iPhone erlaubt Video nur direkt nach einer Berührung: darum bei jeder Berührung im Kochmodus erneut starten.
+function wachStatus(laeuft) {
+  const e = document.getElementById('wach-status');
+  if (e) e.textContent = laeuft
+    ? 'Bildschirm bleibt an (Ersatztrick läuft).'
+    : 'Tippe einmal auf den Bildschirm, damit er anbleibt.';
+}
+document.addEventListener('pointerdown', () => {
+  if (wachGewuenscht && wachVideo && wachVideo.paused) videoErsatz(true);
+}, { passive: true });
 function videoErsatz(an) {
   if (an) {
     if (!wachVideo) {
       const v = h('video', { muted: '', loop: '', playsinline: '', 'aria-hidden': 'true', tabindex: '-1', preload: 'auto' },
         h('source', { src: 'wach.mp4', type: 'video/mp4' }), h('source', { src: 'wach.webm', type: 'video/webm' }));
       v.muted = true; // muss als Eigenschaft gesetzt sein, sonst blockieren Browser das Abspielen
-      v.style.cssText = 'position:fixed;left:0;bottom:0;width:2px;height:2px;opacity:0.02;pointer-events:none';
+      v.style.cssText = 'position:fixed;left:0;bottom:0;width:4px;height:4px;opacity:0.05;pointer-events:none';
       document.body.append(v);
       wachVideo = v;
     }
-    wachVideo.play().catch(() => { /* ohne Fingertipp erlaubt der Browser es evtl. nicht – Hinweis im Kochmodus */ });
+    wachVideo.play().then(() => wachStatus(true), () => wachStatus(false));
   } else if (wachVideo) {
     wachVideo.pause();
   }
@@ -604,7 +614,7 @@ async function kochAnsicht(slug, index, nr) {
     zutatenDiesesSchritts.length ? h('section', { class: 'schritt-zutaten', 'aria-labelledby': 'sz-titel' },
       h('h2', { id: 'sz-titel' }, 'Zutaten für diesen Schritt'),
       h('ul', {}, zutatenDiesesSchritts.map((z) => h('li', {}, zutatText(z, faktor))))) : null,
-    !('wakeLock' in navigator) ? h('p', { class: 'klein leise' }, 'Hinweis: Ohne HTTPS hält Rührwerk den Bildschirm mit einem Ersatztrick an. Geht er trotzdem aus, stelle die Bildschirmsperre länger ein.') : null,
+    !('wakeLock' in navigator) ? h('p', { class: 'klein leise', id: 'wach-status', role: 'status' }, wachVideo && !wachVideo.paused ? 'Bildschirm bleibt an (Ersatztrick läuft).' : 'Tippe einmal auf den Bildschirm, damit er anbleibt.') : null,
   );
 
   navSlot.replaceChildren(h('nav', { class: 'nav', 'aria-label': 'Schritte' },
