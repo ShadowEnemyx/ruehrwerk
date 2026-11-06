@@ -115,6 +115,10 @@ FAELLE = [
     ("10 Sek./St.5", [E(d=10, s=5)]),
     ("Bei 180 C für 25 min im vorgeheizten Backofen überbacken", []),
     ("Mit 2 Stück 5 Min. ruhen lassen.", []),
+    # --- aus einem KI-gelesenen Handschrift-Foto: "sec." statt "Sek." ---
+    ("Danach die restlichen Zutaten in den TM geben und 10 sec./st. 6 mixen.", [E(d=10, s=6)]),
+    ("Essig, Wasser, Zucker, Salz und Gemüsebrühe in den TM geben und 8 min./Varoma/st. 1 kochen.", [E(d=480, v=True, s=1)]),
+    ("5 Sec/Stufe 7", [E(d=5, s=7)]),
     # --- Texte ohne Einstellung ---
     ("30 Min. im Kühlschrank ruhen lassen.", []),
     ("Teig 1 Std. gehen lassen.", []),

@@ -22,7 +22,7 @@ BEREICH_STUFE = r"(?:[-–]|\s+bis\s+)"  # bei Stufen enger, sonst wird "Stufe 1
 
 STD = rf"(?:Stunden|Stunde|Std\.?){ENDE}"
 MIN = rf"(?:Minuten|Minute|Min\.?){ENDE}"
-SEK = rf"(?:Sekunden|Sekunde|Sek\.?){ENDE}"
+SEK = rf"(?:Sekunden|Sekunde|Sek\.?|Sec\.?){ENDE}"  # "sec" schreiben KI-Texte aus Fotos manchmal
 ZEITTEIL = rf"{ZAHL}(?:{BEREICH}{ZAHL})?\s*(?:{STD}|{MIN}|{SEK})"
 ZEIT = (
     rf"{KEINE_ZAHL_DAVOR}(?:(?P<wdh>\d+)\s*[x×]\s*)?"
