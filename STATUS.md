@@ -1,6 +1,6 @@
 # Status Rührwerk
 
-Stand: 06.11.2026. Repository: https://github.com/ShadowEnemyx/ruehrwerk. Letzter Commit auf GitHub: `c48946b`; lokal liegen darüber nur Dokumentations-Commits (siehe "Commits").
+Stand: 07.11.2026. Repository: https://github.com/ShadowEnemyx/ruehrwerk. Letzter Commit auf GitHub: `c48946b`; lokal liegen darüber ein Code-Commit (`cbab1a2`) und Dokumentations-Commits (siehe "Commits"), nicht gepusht.
 
 ## Zusammenfassung
 M1 (Gerüst, Mealie-Anbindung, Parser, Kochmodus) und M3 (Foto-/Text-Import per KI über Mealie) sind umgesetzt und laufen auf dem Proxmox-Server des Projektinhabers; am Handy getestet. M4 ist teilweise da (Installer, Laien-Anleitung). M2 (Teilen vom Handy) ist nicht begonnen.
@@ -9,7 +9,7 @@ M1 (Gerüst, Mealie-Anbindung, Parser, Kochmodus) und M3 (Foto-/Text-Import per 
 - Proxmox VE 8.2.2, Host `pve`, Container 112 (`ruehrwerk`, Debian 12, unprivilegiert, Speicher `local-lvm`).
 - Im Container: Docker mit Mealie v3.30.0 (Port 9000) und Rührwerk (Port 8080), Dateien in `/opt/ruehrwerk` (Quellcode in `quelle`).
 - Installer lief am 05.11.2026 erfolgreich durch; Rührwerk meldet "mit Mealie verbunden".
-- Auf dem Server läuft der Stand von `c48946b` (laut Projektinhaber aktualisiert und getestet).
+- Auf dem Server läuft der Stand von `c48946b` (ohne `cbab1a2`) (laut Projektinhaber aktualisiert und getestet).
 - `lxc-pve` ist 6.0.0-2 (älter als 6.0.5-2). Docker lief trotzdem; ob der Installer containerd festgesetzt hat, ist nicht dokumentiert. Proxmox-Update steht aus.
 - Update im Container-Terminal (`pct enter 112`, dort ohne `pct exec`):
   `cd /opt/ruehrwerk && curl -fsSL https://github.com/ShadowEnemyx/ruehrwerk/archive/refs/heads/main.tar.gz | tar -xz --strip-components=1 -C quelle && docker compose up -d --build ruehrwerk`
@@ -25,6 +25,7 @@ M1 (Gerüst, Mealie-Anbindung, Parser, Kochmodus) und M3 (Foto-/Text-Import per 
 - KI-gelesene Rezepte: Wurde ein Rezept per Foto importiert, merkt sich Rührwerk das (SQLite-Tabelle `ki_rezept`). Jede Einstellung steht dann auf "prüfen" und braucht einmal "Passt so" oder "Ändern"; gelber Hinweis oben im Rezept. "Ändern" gibt es im Kochmodus auch bei unauffälligen Werten. Reine Text-Importe werden nicht markiert.
 - Links zu Cookidoo werden mit Hinweis abgelehnt (Projektregel: kein Cookidoo-Zugriff).
 - Rezeptbild oben wird vollständig gezeigt (`object-fit: contain`).
+- Mitglieder-Rezepte: Der Mealie-Platzhalter statt der Schritte wird ausgeblendet, stattdessen ein klarer Hinweis (siehe "Bekannte Punkte").
 
 ## Geprüft (datiert)
 - 07.11.2026: 215 automatische Tests grün (inkl. 3 neue für den Mitglieder-Platzhalter). Die Anzeige im Browser ist nicht geprüft.
@@ -41,7 +42,7 @@ M1 (Gerüst, Mealie-Anbindung, Parser, Kochmodus) und M3 (Foto-/Text-Import per 
 - Plausibilitätsgrenzen (`GRENZEN` in `app/parser/plausi.py`) sind Annahmen: Temperaturen 37 °C und 40–120 °C in 5er-Schritten, Stufen 0,5 und 1–10. Nicht am echten Gerät bestätigt (Stufe 2,5 wird als "prüfen" markiert).
 - Service Worker, Offline-Betrieb und "Als App installieren" brauchen HTTPS; über `http://` nicht nutzbar.
 - Dockerfile auf dem Entwicklungsrechner nicht gebaut (Docker Desktop dort nicht nutzbar); gebaut wurde es im Container 112.
-- Der Sicherheitscheck des Plugins `security-guidance` lief bei den letzten Commits nicht (Anmeldung abgelehnt, HTTP 401); die Commits seit `fec5fe9` wurden nicht automatisch geprüft. Protokoll: `~/.claude/security/log.txt`.
+- Der Sicherheitscheck des Plugins `security-guidance` lief bei den letzten Commits nicht (Anmeldung abgelehnt, HTTP 401); die Commits seit `fec5fe9` (auch `cbab1a2`, erneut HTTP 401 am 07.11.2026) wurden nicht automatisch geprüft. Protokoll: `~/.claude/security/log.txt`.
 
 ## Bekannte Punkte aus Tests mit echten Rezepten
 - Quellen, die Schritte nur Mitgliedern zeigen (z. B. ein rezeptwelt.de-Rezept), liefern in Mealie nur den Platzhaltertext "Recipe steps as well as other fields …". Rührwerk erkennt den Beginn des Satzes (`PLATZHALTER_ANFANG` in `app/rezept.py`), blendet ihn aus und zeigt "Keine Zubereitungsschritte gefunden …" (umgesetzt 07.11.2026, nur per Test belegt; der genaue Platzhaltertext ist nicht bekannt, erkannt wird nur der Anfang).
@@ -66,11 +67,13 @@ M1 (Gerüst, Mealie-Anbindung, Parser, Kochmodus) und M3 (Foto-/Text-Import per 
 
 ## Nächste Schritte
 - Mehr echte Rezepte importieren (Links, Fotos); falsch gelesene Sätze als Tests aufnehmen.
+- `cbab1a2` pushen und den Server aktualisieren (Befehl oben).
 - M2: Teilen-Funktion. iPhone per Apple-Kurzbefehl (braucht kein HTTPS), Android per Web Share Target (braucht HTTPS, z. B. über Tailscale).
 - M4: Installer um optionales Tailscale ergänzen, Anleitung weiter verfeinern (Foto-Import, KI-Einrichtung in Mealie).
 - Optional: `PROJECT_CONTEXT.md` für dauerhafte Technik und Schutzregeln anlegen (existiert noch nicht).
 
 ## Commits (neueste zuerst)
+- `cbab1a2` Mitglieder-Platzhalter von Mealie abfangen, klarer Hinweis (nur lokal)
 - `c48946b` Parser: sec/Sec als Sekunden erkennen (letzter Stand auf GitHub)
 - `4cdad1d` KI-gelesene Rezepte: alle Einstellungen zur Bestätigung markieren, Ändern auch bei unauffälligen Werten
 - `3788349` Rezeptbild vollständig anzeigen (contain)
