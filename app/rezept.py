@@ -47,6 +47,15 @@ KI_HINWEIS = {
 }
 
 
+# Quellen, die Schritte nur Mitgliedern zeigen, liefern in Mealie nur diesen englischen Platzhalter
+# (Beginn des Satzes, am Beispiel eines rezeptwelt.de-Rezepts beobachtet; der genaue Rest ist nicht bekannt).
+PLATZHALTER_ANFANG = "recipe steps as well as other fields"
+
+
+def _ist_platzhalter(text: str) -> bool:
+    return text.strip().lower().startswith(PLATZHALTER_ANFANG)
+
+
 def aufbereiten(
     rezept: dict, bestaetigungen: dict[tuple[str, int], dict] | None = None, ki_gelesen: bool = False
 ) -> dict:
@@ -60,9 +69,13 @@ def aufbereiten(
     bestaetigungen = bestaetigungen or {}
     schritte = []
     offen = 0
+    gesperrt = False
     for index, s in enumerate(rezept.get("recipeInstructions") or []):
         schritt_id = str(s.get("id") or index)
         text = s.get("text") or ""
+        if _ist_platzhalter(text):
+            gesperrt = True  # kein echter Schritt: nicht anzeigen, stattdessen klarer Hinweis
+            continue
         ergebnis = parse_schritt(text)
         einstellungen = []
         for nr, e in enumerate(ergebnis.einstellungen):
@@ -100,6 +113,7 @@ def aufbereiten(
         "hat_bild": bool(rezept.get("image")),
         "zutaten": [_zutat(z) for z in rezept.get("recipeIngredient") or []],
         "schritte": schritte,
+        "schritte_gesperrt": gesperrt and not schritte,
         "offen": offen,
         "ki_gelesen": ki_gelesen,
     }

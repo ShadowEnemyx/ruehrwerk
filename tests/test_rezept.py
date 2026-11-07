@@ -118,3 +118,19 @@ def test_ki_rezept_bestaetigung_gilt():
     )
     e = ki["schritte"][0]["einstellungen"][0]
     assert e["status"] == "bestaetigt" and e["dauer_s"] == 6
+
+
+# --- Platzhalter von Quellen, die Schritte nur Mitgliedern zeigen ---
+def test_platzhalter_schritt_wird_zum_hinweis():
+    r = aufbereiten({"slug": "x", "recipeInstructions": [{"text": "Recipe steps as well as other fields are only available for members."}]})
+    assert r["schritte"] == [] and r["schritte_gesperrt"] is True
+
+
+def test_normales_rezept_ist_nicht_gesperrt():
+    assert aufbereiten(MEALIE_REZEPT)["schritte_gesperrt"] is False
+    assert aufbereiten({})["schritte_gesperrt"] is False
+
+
+def test_echte_schritte_bleiben_neben_platzhalter():
+    r = aufbereiten({"recipeInstructions": [{"text": "Recipe steps as well as other fields …"}, {"text": "10 Sek./Stufe 5"}]})
+    assert len(r["schritte"]) == 1 and r["schritte_gesperrt"] is False

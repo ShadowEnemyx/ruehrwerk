@@ -604,7 +604,9 @@ async function rezeptAnsicht(slug, nr, neuGeladen = false) {
     ) : null,
     r.portionen ? h('p', { class: 'klein leise' }, 'Hinweis: Nur die Zutatenmengen werden umgerechnet. Zeiten und Einstellungen im Rezept bleiben wie angegeben.') : null,
     r.zutaten.length ? zutatenListe : h('p', { class: 'leise' }, 'Zu diesem Rezept gibt es keine Zutatenliste.'),
-    !r.schritte.length ? h('div', { class: 'meldung warnung' }, 'Dieses Rezept hat noch keine Schritte. Ergänze sie in Mealie.') : null,
+    !r.schritte.length ? h('div', { class: 'meldung warnung' }, r.schritte_gesperrt
+      ? 'Keine Zubereitungsschritte gefunden. Die Seite zeigt die Schritte vermutlich nur Mitgliedern. Importiere das Rezept stattdessen als Foto oder Text.'
+      : 'Dieses Rezept hat noch keine Schritte. Ergänze sie in Mealie.') : null,
   );
   zutatenZeichnen();
   if (!neuGeladen) document.getElementById('rezept-titel').focus({ preventScroll: true });

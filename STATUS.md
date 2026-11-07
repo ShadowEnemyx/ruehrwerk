@@ -27,6 +27,7 @@ M1 (Gerüst, Mealie-Anbindung, Parser, Kochmodus) und M3 (Foto-/Text-Import per 
 - Rezeptbild oben wird vollständig gezeigt (`object-fit: contain`).
 
 ## Geprüft (datiert)
+- 07.11.2026: 215 automatische Tests grün (inkl. 3 neue für den Mitglieder-Platzhalter). Die Anzeige im Browser ist nicht geprüft.
 - 06.11.2026: 212 automatische Tests grün (Parser, Plausibilität, Mealie-Client, API inkl. KI-Import und Cookidoo-Ablehnung, Aufbereitung inkl. KI-Markierung, Installer inkl. Trockenlauf mit nachgestellten Proxmox-Befehlen).
 - 06.11.2026: Oberfläche für Foto-/Text-Import, KI-Hinweis und Cookidoo-Meldung im Browser gegen ein nachgestelltes Mealie (`tools/fake_mealie.py`) gesehen (Handybreite).
 - Laut Projektinhaber, 06.11.2026: Foto-Import mit echter KI funktioniert; ein handgeschriebenes Rezept ("Salatsoße") wird nach dem `sec`-Fix vollständig erkannt; Wachhalten am iPhone funktioniert.
@@ -43,7 +44,7 @@ M1 (Gerüst, Mealie-Anbindung, Parser, Kochmodus) und M3 (Foto-/Text-Import per 
 - Der Sicherheitscheck des Plugins `security-guidance` lief bei den letzten Commits nicht (Anmeldung abgelehnt, HTTP 401); die Commits seit `fec5fe9` wurden nicht automatisch geprüft. Protokoll: `~/.claude/security/log.txt`.
 
 ## Bekannte Punkte aus Tests mit echten Rezepten
-- Quellen, die Schritte nur Mitgliedern zeigen (z. B. ein rezeptwelt.de-Rezept), liefern in Mealie nur den Platzhaltertext "Recipe steps as well as other fields …". Rührwerk zeigt dann einen verwirrenden englischen Satz statt eines klaren Hinweises. Verbesserung geplant, nicht umgesetzt.
+- Quellen, die Schritte nur Mitgliedern zeigen (z. B. ein rezeptwelt.de-Rezept), liefern in Mealie nur den Platzhaltertext "Recipe steps as well as other fields …". Rührwerk erkennt den Beginn des Satzes (`PLATZHALTER_ANFANG` in `app/rezept.py`), blendet ihn aus und zeigt "Keine Zubereitungsschritte gefunden …" (umgesetzt 07.11.2026, nur per Test belegt; der genaue Platzhaltertext ist nicht bekannt, erkannt wird nur der Anfang).
 - Rezepte, die vor der KI-Markierung importiert wurden, sind nicht als "KI-gelesen" gemerkt.
 
 ## Entscheidungen
@@ -56,7 +57,7 @@ M1 (Gerüst, Mealie-Anbindung, Parser, Kochmodus) und M3 (Foto-/Text-Import per 
 
 ## Offene Punkte
 1. Android testen (Kochmodus, Wachhalten).
-2. Hinweis "Keine Zubereitungsschritte gefunden" statt des Mealie-Platzhalters.
+2. Erledigt (07.11.2026): Hinweis statt Mealie-Platzhalter; mit einem echten Mitglieder-Rezept am Handy gegenprüfen.
 3. Plausibilitätsgrenzen am Gerät bestätigen (u. a. Stufe 2,5).
 4. Proxmox aktualisieren (`apt update && apt dist-upgrade`), danach `apt-mark unhold containerd.io` im Container, falls festgesetzt; vorher Sicherung/Snapshot.
 5. Entscheiden, ob ein Knopf "Alle bestätigen" für KI-Rezepte nötig ist (Rückmeldung des Projektinhabers steht aus).
