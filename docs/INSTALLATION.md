@@ -53,6 +53,25 @@ und tippe auf „Importieren“.
 Kochmodus mit einem Ersatztrick an: Ein winziges stummes Video läuft unsichtbar mit. Das ist kein Garant, probiere es
 an deinem Handy aus. Geht der Bildschirm trotzdem aus, stelle die Bildschirmsperre länger ein.
 
+## Rezepte vom iPhone teilen (Apple-Kurzbefehl)
+Mit einem Kurzbefehl schickst du den Link der Rezeptseite aus Safari direkt an Rührwerk: Teilen antippen, Kurzbefehl
+wählen, fertig. Das funktioniert auch ohne HTTPS, aber nur im Heimnetz (oder im VPN).
+Die genauen Namen der Aktionen können je nach iOS-Version und Sprache etwas abweichen.
+
+1. Öffne die App **Kurzbefehle**, tippe auf **+** und gib dem Kurzbefehl den Namen „An Rührwerk senden“.
+2. Tippe oben auf das **i** (Details) und schalte **Im Share Sheet anzeigen** ein. Erlaube als Eingabe nur
+   **URLs** und **Safari-Webseiten**.
+3. Füge diese Aktionen in dieser Reihenfolge hinzu:
+   1. **URL-Codierung** (englisch: *URL Encode*), Eingabe: die **Eingabe des Kurzbefehls** (Share-Sheet-Eingabe).
+   2. **Text** mit dem Inhalt `http://ADRESSE:8080/#/teilen?url=` und direkt dahinter das **Ergebnis der URL-Codierung**.
+      `ADRESSE` ist die Adresse deines Rührwerk-Containers im Heimnetz, dieselbe wie im Safari beim normalen Öffnen.
+   3. **URLs öffnen** mit dem Ergebnis des Textes.
+4. Öffne in Safari ein Rezept, tippe auf **Teilen**, scrolle zu **An Rührwerk senden** und tippe darauf.
+   Rührwerk importiert das Rezept und öffnet es.
+
+Cookidoo-Links werden abgelehnt. Wenn eine Seite die Schritte nur Mitgliedern zeigt, meldet Rührwerk das und schlägt
+Foto oder Text vor.
+
 **HTTPS (optional):** Offline-Betrieb und „Als App installieren“ funktionieren nur über HTTPS, ebenso die
 eingebaute Bildschirm-Sperre des Browsers. Zuhause brauchst du das nicht zwingend. Wenn du es später möchtest,
 geht es zum Beispiel mit Tailscale; das ist noch nicht in den Installer eingebaut.

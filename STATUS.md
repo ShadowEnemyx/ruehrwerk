@@ -1,6 +1,6 @@
 # Status Rührwerk
 
-Stand: 07.11.2026. Repository: https://github.com/ShadowEnemyx/ruehrwerk. Letzter Commit auf GitHub: `c48946b`; lokal liegen darüber ein Code-Commit (`cbab1a2`) und Dokumentations-Commits (siehe "Commits"), nicht gepusht.
+Stand: 10.11.2026. Repository: https://github.com/ShadowEnemyx/ruehrwerk. Auf GitHub liegt der Stand bis `f4524fd` (Platzhalter-Fix); die Teilen-Route ist lokal committet, siehe "Commits".
 
 ## Zusammenfassung
 M1 (Gerüst, Mealie-Anbindung, Parser, Kochmodus) und M3 (Foto-/Text-Import per KI über Mealie) sind umgesetzt und laufen auf dem Proxmox-Server des Projektinhabers; am Handy getestet. M4 ist teilweise da (Installer, Laien-Anleitung). M2 (Teilen vom Handy) ist nicht begonnen.
@@ -9,7 +9,7 @@ M1 (Gerüst, Mealie-Anbindung, Parser, Kochmodus) und M3 (Foto-/Text-Import per 
 - Proxmox VE 8.2.2, Host `pve`, Container 112 (`ruehrwerk`, Debian 12, unprivilegiert, Speicher `local-lvm`).
 - Im Container: Docker mit Mealie v3.30.0 (Port 9000) und Rührwerk (Port 8080), Dateien in `/opt/ruehrwerk` (Quellcode in `quelle`).
 - Installer lief am 05.11.2026 erfolgreich durch; Rührwerk meldet "mit Mealie verbunden".
-- Auf dem Server läuft der Stand von `c48946b` (ohne `cbab1a2`) (laut Projektinhaber aktualisiert und getestet).
+- Auf dem Server läuft der Stand von `c48946b` (ohne den Platzhalter-Fix `cbab1a2` und die Teilen-Route) (laut Projektinhaber aktualisiert und getestet).
 - `lxc-pve` ist 6.0.0-2 (älter als 6.0.5-2). Docker lief trotzdem; ob der Installer containerd festgesetzt hat, ist nicht dokumentiert. Proxmox-Update steht aus.
 - Update im Container-Terminal (`pct enter 112`, dort ohne `pct exec`):
   `cd /opt/ruehrwerk && curl -fsSL https://github.com/ShadowEnemyx/ruehrwerk/archive/refs/heads/main.tar.gz | tar -xz --strip-components=1 -C quelle && docker compose up -d --build ruehrwerk`
@@ -23,11 +23,13 @@ M1 (Gerüst, Mealie-Anbindung, Parser, Kochmodus) und M3 (Foto-/Text-Import per 
 - Kochmodus: ein Schritt pro Bildschirm, Timer, Portionen umrechnen. Bildschirm bleibt an: über HTTPS mit Wake Lock, über `http://` mit unsichtbarem stummem Video (Start per Berührung, Statusanzeige im Kochmodus).
 - Foto-/Text-Import per KI (M3): Fotos (JPEG/PNG/WebP/GIF, höchstens 6 je 10 MB), optionaler Text und/oder Link an Mealies `POST /api/recipes/create/ai` (im Quellcode v3.30.0 gelesen). Route `/api/import-ki`, Reiter "Link" / "Foto / Text". Rührwerk speichert die Fotos nicht; sie gehen über Mealie an den KI-Anbieter. Mealie-Fehlertexte werden angezeigt. Neue Abhängigkeit: `python-multipart`.
 - KI-gelesene Rezepte: Wurde ein Rezept per Foto importiert, merkt sich Rührwerk das (SQLite-Tabelle `ki_rezept`). Jede Einstellung steht dann auf "prüfen" und braucht einmal "Passt so" oder "Ändern"; gelber Hinweis oben im Rezept. "Ändern" gibt es im Kochmodus auch bei unauffälligen Werten. Reine Text-Importe werden nicht markiert.
+- Teilen (M2, iPhone, umgesetzt 10.11.2026): Route `#/teilen?url=<Link>` importiert den Link sofort und öffnet das Rezept; Prüfung des Links in `linkProblem()` (`web/app.js`), gemeinsam mit dem Link-Formular. Der Apple-Kurzbefehl selbst ist in `docs/INSTALLATION.md` beschrieben (nicht als Datei vorhanden).
 - Links zu Cookidoo werden mit Hinweis abgelehnt (Projektregel: kein Cookidoo-Zugriff).
 - Rezeptbild oben wird vollständig gezeigt (`object-fit: contain`).
 - Mitglieder-Rezepte: Der Mealie-Platzhalter statt der Schritte wird ausgeblendet, stattdessen ein klarer Hinweis (siehe "Bekannte Punkte").
 
 ## Geprüft (datiert)
+- 10.11.2026: `#/teilen` im Browser gegen das nachgestellte Mealie gesehen (Handybreite): Import mit kodiertem und unkodiertem Link, Cookidoo-Ablehnung (nichts an Mealie gesendet), Mealie-Fehler, fehlender Link. Alle 215 Tests grün (keine neuen, das Frontend hat keine automatischen Tests). Der Kurzbefehl am echten iPhone und die Anleitung sind NICHT geprüft.
 - 07.11.2026: 215 automatische Tests grün (inkl. 3 neue für den Mitglieder-Platzhalter). Die Anzeige im Browser ist nicht geprüft.
 - 06.11.2026: 212 automatische Tests grün (Parser, Plausibilität, Mealie-Client, API inkl. KI-Import und Cookidoo-Ablehnung, Aufbereitung inkl. KI-Markierung, Installer inkl. Trockenlauf mit nachgestellten Proxmox-Befehlen).
 - 06.11.2026: Oberfläche für Foto-/Text-Import, KI-Hinweis und Cookidoo-Meldung im Browser gegen ein nachgestelltes Mealie (`tools/fake_mealie.py`) gesehen (Handybreite).
@@ -62,17 +64,19 @@ M1 (Gerüst, Mealie-Anbindung, Parser, Kochmodus) und M3 (Foto-/Text-Import per 
 3. Plausibilitätsgrenzen am Gerät bestätigen (u. a. Stufe 2,5).
 4. Proxmox aktualisieren (`apt update && apt dist-upgrade`), danach `apt-mark unhold containerd.io` im Container, falls festgesetzt; vorher Sicherung/Snapshot.
 5. Entscheiden, ob ein Knopf "Alle bestätigen" für KI-Rezepte nötig ist (Rückmeldung des Projektinhabers steht aus).
-6. Geräte der Nutzer klären (iPhone/Android) für M2.
+6. Kurzbefehl am echten iPhone nach der Anleitung anlegen und prüfen; Aktionsnamen in der Anleitung ggf. korrigieren. Geräte der Nutzer klären (Android für Web Share Target).
 7. Optional: Anmeldung des Sicherheits-Plugins erneuern.
 
 ## Nächste Schritte
 - Mehr echte Rezepte importieren (Links, Fotos); falsch gelesene Sätze als Tests aufnehmen.
-- `cbab1a2` pushen und den Server aktualisieren (Befehl oben).
-- M2: Teilen-Funktion. iPhone per Apple-Kurzbefehl (braucht kein HTTPS), Android per Web Share Target (braucht HTTPS, z. B. über Tailscale).
+- Server auf den neuen Stand bringen (Befehl oben) und `#/teilen` samt Kurzbefehl am iPhone ausprobieren.
+- M2 Android: Web Share Target (braucht HTTPS, z. B. über Tailscale).
 - M4: Installer um optionales Tailscale ergänzen, Anleitung weiter verfeinern (Foto-Import, KI-Einrichtung in Mealie).
 - Optional: `PROJECT_CONTEXT.md` für dauerhafte Technik und Schutzregeln anlegen (existiert noch nicht).
 
 ## Commits (neueste zuerst)
+- (neu, siehe `git log`) Teilen-Route `#/teilen` und Kurzbefehl-Anleitung
+- `f4524fd` STATUS.md aktualisiert (letzter Stand auf GitHub zum Zeitpunkt des Pushs am 10.11.2026)
 - `cbab1a2` Mitglieder-Platzhalter von Mealie abfangen, klarer Hinweis (nur lokal)
 - `c48946b` Parser: sec/Sec als Sekunden erkennen (letzter Stand auf GitHub)
 - `4cdad1d` KI-gelesene Rezepte: alle Einstellungen zur Bestätigung markieren, Ändern auch bei unauffälligen Werten

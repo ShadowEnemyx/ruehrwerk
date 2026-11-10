@@ -27,6 +27,17 @@ function anzeigen(...kinder) {
   app.replaceChildren(...kinder.flat(Infinity).filter((k) => k != null && k !== false));
 }
 
+// Prüft einen Rezept-Link vor dem Import; liefert einen Hinweistext oder null, wenn alles passt.
+function linkProblem(url) {
+  if (!/^https?:\/\/\S+$/i.test(url)) return 'Bitte einen Link einfügen, der mit http:// oder https:// beginnt.';
+  let host = '';
+  try { host = new URL(url).hostname; } catch { return 'Dieser Link ist ungültig.'; }
+  if (/cookidoo/i.test(host)) {
+    return 'Links zu Cookidoo werden nicht unterstützt. Nutze einen frei zugänglichen Rezept-Link, ein Foto aus deinem eigenen Kochbuch oder füge den Text selbst ein.';
+  }
+  return null;
+}
+
 const zahl = (n) => new Intl.NumberFormat('de-DE', { maximumFractionDigits: 2 }).format(n);
 
 function dauerText(s) {
@@ -390,15 +401,11 @@ async function startAnsicht(nr) {
     importFehler.textContent = '';
     eingabe.removeAttribute('aria-invalid');
     const url = eingabe.value.trim();
-    if (!/^https?:\/\/\S+$/i.test(url)) {
+    const problem = linkProblem(url);
+    if (problem) {
       eingabe.setAttribute('aria-invalid', 'true');
-      importFehler.textContent = 'Bitte einen Link einfügen, der mit http:// oder https:// beginnt.';
+      importFehler.textContent = problem;
       eingabe.focus();
-      return;
-    }
-    if (/cookidoo/i.test(new URL(url).hostname)) {
-      eingabe.setAttribute('aria-invalid', 'true');
-      importFehler.textContent = 'Links zu Cookidoo werden nicht unterstützt. Nutze einen frei zugänglichen Rezept-Link, ein Foto aus deinem eigenen Kochbuch oder füge den Text selbst ein.';
       return;
     }
     knopf.disabled = true;
@@ -628,6 +635,30 @@ function textMitMarkierung(text, einstellungen) {
   return teile;
 }
 
+// Ziel des iPhone-Kurzbefehls: #/teilen?url=<Link>. Importiert den Link sofort und öffnet das Rezept.
+async function teilenAnsicht(url, nr) {
+  const zurueck = h('a', { class: 'link', href: '#/' }, '← Zur Startseite');
+  const problem = linkProblem(url);
+  if (problem) {
+    anzeigen(h('h1', {}, 'Rezept teilen'), h('div', { class: 'meldung fehler', role: 'alert' }, problem), zurueck);
+    return;
+  }
+  anzeigen(h('h1', {}, 'Rezept teilen'), h('p', { role: 'status' }, 'Importiere … (das kann etwas dauern)'), h('p', { class: 'klein leise' }, url));
+  try {
+    const { slug } = await api('/api/import', sendeJson('POST', { url }));
+    if (nr !== zeichenNummer) return;
+    location.replace(`#/rezept/${encodeURIComponent(slug)}`);
+  } catch (fehler) {
+    if (nr !== zeichenNummer) return;
+    anzeigen(
+      h('h1', {}, 'Rezept teilen'),
+      h('div', { class: 'meldung fehler', role: 'alert' }, `Import nicht möglich: ${fehler.message}`),
+      h('p', {}, 'Versuche es später noch einmal oder importiere das Rezept als Foto oder Text.'),
+      zurueck,
+    );
+  }
+}
+
 async function kochAnsicht(slug, index, nr) {
   let r;
   try {
@@ -718,7 +749,17 @@ document.addEventListener('keydown', (ev) => {
 function route() {
   const nr = ++zeichenNummer;
   kochSteuerung = null;
-  const teile = location.hash.replace(/^#\/?/, '').split('/').filter(Boolean).map(decodeURIComponent);
+  const hash = location.hash.replace(/^#\/?/, '');
+  const fragezeichen = hash.indexOf('?');
+  const pfad = fragezeichen < 0 ? hash : hash.slice(0, fragezeichen);
+  if (pfad === 'teilen') {
+    // Alles nach "?url=" ist der Link (auch wenn der kodierte Link selbst ein "?" oder "&" enthält)
+    const roh = fragezeichen < 0 ? '' : hash.slice(fragezeichen + 1).replace(/^url=/, '');
+    let link = roh;
+    try { link = decodeURIComponent(roh); } catch { /* unkodiert lassen */ }
+    return teilenAnsicht(link.trim(), nr);
+  }
+  const teile = pfad.split('/').filter(Boolean).map(decodeURIComponent);
   if (!teile.length) return startAnsicht(nr);
   if (teile[0] === 'rezept' && teile[1]) return rezeptAnsicht(teile[1], nr);
   if (teile[0] === 'kochen' && teile[1]) return kochAnsicht(teile[1], parseInt(teile[2] ?? '0', 10) || 0, nr);
